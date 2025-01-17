@@ -4,7 +4,7 @@
     RootModule = 'KsLogging.psm1'
     
     # Version number of this module.
-    ModuleVersion = '1.0'
+    ModuleVersion = '0.2'
     
     # Supported PSEditions
     # CompatiblePSEditions = @()
@@ -31,7 +31,7 @@
     # PowerShellHostName = ''
     
     # Minimum version of the PowerShell host required by this module
-    # PowerShellHostVersion = ''
+    PowerShellHostVersion = '5.0'
     
     # Minimum version of Microsoft .NET Framework required by this module. This prerequisite is valid for the PowerShell Desktop edition only.
     # DotNetFrameworkVersion = ''
@@ -92,7 +92,7 @@
         PSData = @{
     
             # Tags applied to this module. These help with module discovery in online galleries.
-            Tags = @('Logging','Log','Event','Event Log','File')
+            Tags = @('Logging','Log','Event','EventLog','File')
     
             # A URL to the license for this module.
             LicenseUri = 'https://github.com/TechWacko/KsLogging?tab=GPL-3.0-1-ov-file'
@@ -104,7 +104,7 @@
             # IconUri = ''
     
             # ReleaseNotes of this module
-            # ReleaseNotes = ''
+            ReleaseNotes = 'https://github.com/TechWacko/KsLogging/blob/main/README.md'
     
             # Prerelease string of this module
             # Prerelease = ''
@@ -120,7 +120,7 @@
     } # End of PrivateData hashtable
     
     # HelpInfo URI of this module
-    # HelpInfoURI = ''
+    HelpInfoURI = 'https://github.com/TechWacko/KsLogging/blob/main/README.md'
     
     # Default prefix for commands exported from this module. Override the default prefix using Import-Module -Prefix.
     # DefaultCommandPrefix = ''
