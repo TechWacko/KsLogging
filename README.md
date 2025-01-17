@@ -1,6 +1,14 @@
 # KsLogging
 This is a Powershell Module used for logging within scripts.
 
+If you are planning to use Powershell 7 and the event log functionality import the following module into your script before you import the KsLogging module:
+
+```
+Import-Module Microsoft.PowerShell.Management -UseWindowsPowerShell
+```
+
+This will import in the necessary New-EventLog and Write-EventLog commands that are needed for the KsLogging module to work properly.
+
 # Functions
 ## Event Log Functions
 ### Start-AppEventLog
