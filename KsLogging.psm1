@@ -7,7 +7,9 @@
 	Author:       Kurt Marvin
 	
 	Changelog:
-	   1.0        Initial release
+       0.2      Updated bug when creating a new app event log where the global event log variable was not being set.
+                Also, added whatif:$false to commands so that if whatifpreference is set it will not affect logging.
+	   0.1      Initial release
 #>
 
 #############################################################
@@ -44,8 +46,9 @@ function Start-AppEventLog {
         [string]$EventLog = "Application"
     )
 
-    # Configure the event source name to what is provided or use the script name.
+    # Configure the event source name and event log to what is provided or use the script name.
     $global:EventSource = $EventSource
+    $global:EventLog    = $EventLog
     
     # Create the event source if it doesn't exist
     if (!(Get-EventLog -LogName Application -Source $global:EventSource -ErrorAction SilentlyContinue -Newest 1)) {
@@ -131,7 +134,7 @@ function Start-Log {
     
     # Create the log folder if it doesn't exist
     if (!(Test-Path $global:LogPath)) {
-        New-Item -Path $global:LogPath -ItemType "directory"
+        New-Item -Path $global:LogPath -ItemType "directory" -WhatIf:$false
     }
 }
 
@@ -155,7 +158,7 @@ function Write-Log {
 
     $output = (Get-Date).ToString("dd-MMM-yyyy HH:mm:ss") + " | " + $EntryType + " | " + $Message
 
-    Add-Content -Path $global:LogFilePath -Value $output
+    Add-Content -Path $global:LogFilePath -Value $output -WhatIf:$false
     
     switch ($EntryType) {
         Warning { Write-Warning $Message }
