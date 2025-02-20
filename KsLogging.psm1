@@ -7,9 +7,11 @@
 	Author:       Kurt Marvin
 	
 	Changelog:
+       0.3      Updated eventlog creation to use, eventcreate.exe instead of the built-in powershell modules due to
+                these command lets being discontinued or unusable. Also, updated error checking.
        0.2      Updated bug when creating a new app event log where the global event log variable was not being set.
                 Also, added whatif:$false to commands so that if whatifpreference is set it will not affect logging.
-	   0.1      Initial release
+       0.1      Initial release
 #>
 
 #############################################################
@@ -43,18 +45,23 @@ function Start-AppEventLog {
     Param(
         [Parameter(ValueFromPipeline=$true)]
         [string]$EventSource,
+        [ValidateSet('Application','System')]
         [string]$EventLog = "Application"
     )
 
     # Configure the event source name and event log to what is provided or use the script name.
     $global:EventSource = $EventSource
     $global:EventLog    = $EventLog
-    
-    # Create the event source if it doesn't exist
-    if (!(Get-EventLog -LogName Application -Source $global:EventSource -ErrorAction SilentlyContinue -Newest 1)) {
-        New-EventLog -LogName Application -Source $global:EventSource
-        Write-EventLog -LogName $global:EventLog -Source $global:EventSource -EventId 4100 -EntryType 'Information' -Message "Beginning the log!"
-        Write-Verbose "Created a new log event source called $global:EventSource within the $global:EventLog Eventlog"
+
+    # Check if event source already exists, and if so update it so eventcreate can write to it
+    $path = "HKLM:\SYSTEM\CurrentControlSet\Services\EventLog\$($EventLog)\$($EventSource)"
+
+    $eventSourceRegKey  = Get-Item -Path $path -ErrorAction SilentlyContinue
+    $eventSourceRegProp = Get-ItemProperty -Path $path -Name "CustomSource" -ErrorAction SilentlyContinue
+
+    # If the CustomSource regkey doesn't exist, create it so eventcreate.exe can be used on this event log source
+    if ($eventSourceRegKey -and !$eventSourceRegProp) {
+        $prop = New-ItemProperty -Path $path -Name CustomSource -PropertyType DWORD -Value 1
     }
 }
 
@@ -70,7 +77,7 @@ function Write-AppEventLog {
     .PARAMETER EntryType
         The type of of event written. Information, Warning, or Error.
     .PARAMETER EventID
-        The id number for the event.
+        The id number for the event. Must be between 1 - 1000.
     #>
     Param (
         [Parameter(Mandatory=$true, ValueFromPipeline=$true)]
@@ -79,30 +86,42 @@ function Write-AppEventLog {
         [Parameter()]
         [ValidateSet('Information','Warning','Error')]
         [string] $EntryType = "Information",
+        [ValidateRange(1, 1000)]
         [int]    $EventID
     )
-
-    if (!$EventID) {
-        switch ($EntryType) {
-            "Information" {
-                $EventID = 4100
-            }
-            "Warning" {
-                $EventID = 4101
-            }
-            "Error" {
-                $EventID = 4102
+    # Check if Start-AppEventLog has been called and if not throw error
+    if ($global:EventSource) {
+        # Set EventID to defaults if not specified
+        if (!$EventID) {
+            switch ($EntryType) {
+                "Information" {
+                    $EventID = 100
+                }
+                "Warning" {
+                    $EventID = 101
+                }
+                "Error" {
+                    $EventID = 102
+                }
             }
         }
-    }
-
-    Write-EventLog -LogName $global:EventLog -Source $global:EventSource -Id $EventID -EntryType $EntryType -Message $Message
     
-    switch ($EntryType) {
-        Warning { Write-Warning $Message }
-        Error   { Write-Error $Message }
-        Information { Write-Information $Message }
-        Default { Write-Verbose $Message }
+        # Create the event
+        $response = (eventcreate.exe /L $global:EventLog /T $EntryType /SO $global:EventSource /ID $EventID /D $Message) | Out-String
+        
+        if (!$response.Contains("SUCCESS")) {
+            throw "There was an error in creating an event log entry."
+        }
+        
+        # Write message to standard output based on type
+        switch ($EntryType) {
+            Warning { Write-Warning $Message }
+            Error   { Write-Error $Message }
+            Information { Write-Information $Message }
+            Default { Write-Verbose $Message }
+        }
+    } else {
+        throw "No EventSource specified. Please call Start-AppEventLog or Start-LogAndAppEventLog prior to Write-AppEventLog."
     }
 }
 
@@ -156,15 +175,20 @@ function Write-Log {
         [string]$EntryType = "Information"
     )
 
-    $output = (Get-Date).ToString("dd-MMM-yyyy HH:mm:ss") + " | " + $EntryType + " | " + $Message
+    # Check if Start-Log has been called and if not throw error
+    if ($global:LogFilePath) {
+        $output = (Get-Date).ToString("dd-MMM-yyyy HH:mm:ss") + " | " + $EntryType + " | " + $Message
 
-    Add-Content -Path $global:LogFilePath -Value $output -WhatIf:$false
-    
-    switch ($EntryType) {
-        Warning { Write-Warning $Message }
-        Error   { Write-Error $Message }
-        Information { Write-Information $Message }
-        Default { Write-Verbose $Message }
+        Add-Content -Path $global:LogFilePath -Value $output -WhatIf:$false
+        
+        switch ($EntryType) {
+            Warning { Write-Warning $Message }
+            Error   { Write-Error $Message }
+            Information { Write-Information $Message }
+            Default { Write-Verbose $Message }
+        }
+    } else {
+        throw "No LogFilePath specified. Please call Start-Log or Start-LogAndAppEventLog prior to Write-Log."
     }
 }
 
