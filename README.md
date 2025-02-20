@@ -17,7 +17,7 @@ Start-AppEventLog -EventSource "MyScript"
 ```
 ### Write-AppEventLog
 ```
-Write-AppEventLog "This is a log message!" -EntryType "Warning" -EventID 4100
+Write-AppEventLog "This is a log message!" -EntryType "Warning" -EventID 101
 ```
 ## Log File Functions
 ### Start-Log
